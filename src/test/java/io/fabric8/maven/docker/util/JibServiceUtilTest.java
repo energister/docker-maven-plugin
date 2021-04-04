@@ -6,6 +6,7 @@ import com.google.cloud.tools.jib.api.buildplan.FileEntriesLayer;
 import com.google.cloud.tools.jib.api.buildplan.ImageFormat;
 import com.google.cloud.tools.jib.api.buildplan.Port;
 
+import io.fabric8.maven.docker.UnixOnlyTests;
 import io.fabric8.maven.docker.config.Arguments;
 import io.fabric8.maven.docker.config.AssemblyConfiguration;
 import io.fabric8.maven.docker.config.BuildImageConfiguration;
@@ -15,10 +16,12 @@ import mockit.Verifications;
 import org.apache.maven.plugins.assembly.model.Assembly;
 import org.apache.maven.plugins.assembly.model.FileItem;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -52,7 +55,7 @@ public class JibServiceUtilTest {
         // Given
         ImageConfiguration imageConfiguration = getSampleImageConfiguration();
         // When
-        JibContainerBuilder jibContainerBuilder = containerFromImageConfiguration(imageConfiguration, null);
+        JibContainerBuilder jibContainerBuilder = containerFromImageConfiguration(ImageFormat.Docker.name(), imageConfiguration, null);
         // Then
         // @formatter:off
         new Verifications() {{
@@ -68,33 +71,35 @@ public class JibServiceUtilTest {
             times = 1;
             jibContainerBuilder.setVolumes(new HashSet<>(Collections.singletonList(AbsoluteUnixPath.get("/mnt/volume1"))));
             times = 1;
-            jibContainerBuilder.setFormat(ImageFormat.OCI);
+            jibContainerBuilder.setFormat(ImageFormat.Docker);
             times = 1;
         }};
         // @formatter:on
     }
 
     @Test
+    @Category(UnixOnlyTests.class)
     public void testCopyToContainer(@Mocked JibContainerBuilder containerBuilder) throws IOException {
         // Given
         File temporaryDirectory = Files.createTempDirectory("jib-test").toFile();
         File temporaryFile = new File(temporaryDirectory, "foo.txt");
         boolean wasNewFileCreated = temporaryFile.createNewFile();
+        String tmpRoot = temporaryDirectory.getParent();
 
         // When
-        JibServiceUtil.copyToContainer(containerBuilder, temporaryDirectory, "/tmp", Collections.emptyMap());
+        JibServiceUtil.copyToContainer(containerBuilder, temporaryDirectory, tmpRoot, Collections.emptyMap());
 
         // Then
         assertTrue(wasNewFileCreated);
         new Verifications() {{
-
             FileEntriesLayer fileEntriesLayer;
             containerBuilder.addFileEntriesLayer(fileEntriesLayer = withCapture());
 
             assertNotNull(fileEntriesLayer);
             assertEquals(1, fileEntriesLayer.getEntries().size());
             assertEquals(temporaryFile.toPath(), fileEntriesLayer.getEntries().get(0).getSourceFile());
-            assertEquals(AbsoluteUnixPath.get(temporaryFile.getAbsolutePath().substring(4)), fileEntriesLayer.getEntries().get(0).getExtractionPath());
+            assertEquals(AbsoluteUnixPath.fromPath(Paths.get(temporaryFile.getAbsolutePath().substring(tmpRoot.length()))),
+                    fileEntriesLayer.getEntries().get(0).getExtractionPath());
         }};
     }
 
@@ -120,6 +125,13 @@ public class JibServiceUtilTest {
     @Test
     public void testGetFullImageNameWithProvidedTag() {
         assertEquals("test/test-project:0.0.1", JibServiceUtil.getFullImageName(getSampleImageConfiguration(), "0.0.1"));
+    }
+
+    @Test
+    public void testGetImageFormat() {
+        assertEquals(ImageFormat.Docker, JibServiceUtil.getImageFormat("Docker"));
+        assertEquals(ImageFormat.OCI, JibServiceUtil.getImageFormat("OCI"));
+        assertEquals(ImageFormat.OCI, JibServiceUtil.getImageFormat("oci"));
     }
 
     private ImageConfiguration getSampleImageConfiguration() {

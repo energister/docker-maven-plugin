@@ -21,7 +21,7 @@
 
   <groupId>io.fabric8.dmp.samples</groupId>
   <artifactId>dmp-sample-parent</artifactId>
-  <version>0.34.1</version>
+  <version>0.35.0</version>
   <packaging>pom</packaging>
 
   <url>http://www.jolokia.org</url>
@@ -63,5 +63,8 @@
     <module>log</module>
     <module>run-java</module>
     <module>spring-boot-with-jib</module>
+    <module>build-cache</module>
+    <module>copy-from-container</module>
+    <module>multi-assembly</module>
   </modules>
 </project>

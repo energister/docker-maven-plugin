@@ -5,16 +5,22 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.InetAddress;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonNull;
+import java.util.function.UnaryOperator;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.internal.reflect.ReflectionAccessor;
 import io.fabric8.maven.docker.access.AuthConfig;
 import io.fabric8.maven.docker.util.aws.AwsSdkAuthConfigFactory;
 import mockit.Expectations;
@@ -294,13 +300,40 @@ public class AuthConfigFactoryTest {
         String userHome = System.getProperty("user.home");
         environmentVariables.clear("KUBECONFIG");
         try {
-            File tempDir = Files.createTempDirectory("d-m-p").toFile();
-            System.setProperty("user.home", tempDir.getAbsolutePath());
-            executor.exec(tempDir);
-        } finally {
-            System.setProperty("user.home",userHome);
-        }
+            Field envField = EnvUtil.class.getDeclaredField("systemGetEnv");
+            ReflectionAccessor.getInstance().makeAccessible(envField);
+            @SuppressWarnings("unchecked")
+            UnaryOperator<String> origEnv = (UnaryOperator<String>) envField.get(null);
+            String origUserHome = System.getProperty("user.home");
+            try {
+                final AtomicReference<String> homeDir = new AtomicReference<>();
+                UnaryOperator<String> homeEnv = name -> {
+                    return "HOME".equals(name) ? homeDir.get() : origEnv.apply(name);
+                };
+                envField.set(null, homeEnv);
 
+                // execute with HOME environment variable (preferred)
+                File tempDir = Files.createTempDirectory("d-m-p").toFile();
+                homeDir.set(tempDir.getAbsolutePath());
+                System.setProperty("user.home", "/dev/null/ignore/me");
+                executor.exec(tempDir);
+
+                // execute with user.home system property (fallback)
+                tempDir = Files.createTempDirectory("d-m-p").toFile();
+                homeDir.set(null);
+                System.setProperty("user.home", tempDir.getAbsolutePath());
+                executor.exec(tempDir);
+            } finally {
+                if (origUserHome == null) {
+                    System.clearProperty("user.home");
+                } else {
+                    System.setProperty("user.home", origUserHome);
+                }
+                envField.set(null, origEnv);
+            }
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new AssertionError(e);
+        }
     }
 
     interface HomeDirExecutor {

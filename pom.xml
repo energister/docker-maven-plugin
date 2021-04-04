@@ -443,7 +443,7 @@
   <scm>
     <connection>scm:git:git://github.com/fabric8io/docker-maven-plugin.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/fabric8io/docker-maven-plugin.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>v0.35.0</tag>
     <url>git://github.com/fabric8io/docker-maven-plugin.git</url>
   </scm>
 

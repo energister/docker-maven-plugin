@@ -6,7 +6,7 @@
 
   <groupId>io.fabric8</groupId>
   <artifactId>docker-maven-plugin</artifactId>
-  <version>0.36.0</version>
+  <version>0.36.1</version>
   <packaging>maven-plugin</packaging>
 
   <name>docker-maven-plugin</name>
@@ -38,7 +38,7 @@
     <jmockit.version>1.43</jmockit.version>
     <surefire.version>3.0.0-M2</surefire.version>
     <jib-core.version>0.18.0</jib-core.version>
-    <httpclient.version>4.5.10</httpclient.version>
+    <httpclient.version>4.5.13</httpclient.version>
     <excludedGroups>io.fabric8.maven.docker.UnixOnlyTests</excludedGroups>
     <project.build.outputTimestamp>2020-11-14T11:57:00Z</project.build.outputTimestamp>
   </properties>
@@ -655,6 +655,35 @@
       <properties>
         <excludedGroups/>
       </properties>
+    </profile>
+    <profile>
+      <id>sonar</id>
+      <properties>
+        <sonar.projectKey>fabric8io_docker-maven-plugin</sonar.projectKey>
+        <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
+        <sonar.organization>fabric8io</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.login>${env.SONAR_TOKEN}</sonar.login>
+        <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
+        <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.sonarsource.scanner.maven</groupId>
+            <artifactId>sonar-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>sonar</id>
+                <phase>install</phase>
+                <goals>
+                  <goal>sonar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 </project>

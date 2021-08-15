@@ -30,6 +30,7 @@ import io.fabric8.maven.docker.access.DockerAccessException;
 import io.fabric8.maven.docker.access.UrlBuilder;
 import io.fabric8.maven.docker.access.util.RequestUtil;
 import io.fabric8.maven.docker.util.TimestampFactory;
+
 import org.apache.commons.codec.binary.Hex;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -182,16 +183,10 @@ public class LogRequestor extends Thread implements LogGetHandle {
         }
 
         final InputStream is = response.getEntity().getContent();
-
-        try {
-            while (true) {
-                if (!readStreamFrame(is)) {
-                    return;
-                }
-            }
-        } finally {
-            if ((is != null) && (is.available() > 0)) {
-                is.close();
+       
+        while (true) {
+            if (!readStreamFrame(is)) {
+                return;
             }
         }
     }

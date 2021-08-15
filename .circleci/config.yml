@@ -41,7 +41,7 @@ jobs:
           mvn clean install -DskipTests
           PROJECT_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
           cd it/
-          find . -type f -exec sed -i 's/0.36-SNAPSHOT/'"$PROJECT_VERSION"'/g' {} +
+          find . -type f -exec sed -i 's/0.37.0/'"$PROJECT_VERSION"'/g' {} +
           mvn clean install
     - save_cache:
         key: dmp-{{ checksum "pom.xml" }}
@@ -64,7 +64,7 @@ jobs:
              -Dsonar.pullrequest.key=${CIRCLE_PR_NUMBER} \
              -Dsonar.pullrequest.provider=GitHub \
              -Dsonar.pullrequest.github.repository=fabric8io/docker-maven-plugin \
-             -Dsonar.github.oauth=${GITHUB_COMMENT_TOKEN} \
+             -Dsonar.github.oauth=${GITHUB_COMMENT_TOKEN}
         else
           echo "No Sonar PR analysis as this is not a pull request"
         fi
